@@ -1,29 +1,53 @@
-from PIL import Image, ImageDraw, ImageFont
-
-window_size = (523, 523)
-
-
-def add_chip(point, size, arr):
-    if point[0] < 0 or point[0] > size[0] or point[1] < 0 or point[1] > size[1]:
-        return False
-    arr[point[0]][point[1]] += 1
-    if arr[point[0]][point[1]] >= 4:
-        arr[point[0]][point[1]] = 0
-        add_chip((point[0] + 1, point[1]), size, arr)
-        add_chip((point[0] - 1, point[1]), size, arr)
-        add_chip((point[0], point[1] + 1), size, arr)
-        add_chip((point[0], point[1] - 1), size, arr)
+from PIL import Image
+import numpy as np
 
 
-def massive_of_model(size, graph, iteration):
-    # arr = [[0] * size[0]] * size[1]
-    arr = []
-    for i in range(size[0]):
-        arr.append([0] * size[1])
-    for i in range(iteration):
-        for v in graph:
-            add_chip(v, size, arr)
-    return arr
+class Sandpile(object):
+    def __init__(self, area):
+        self.area = area
+        self.matrix = []
+        for i in range(self.area[0]):
+            self.matrix.append([0] * self.area[1])
+
+    def landslide(self, point):
+        sz_x, sz_y = self.area
+        x, y = point
+        if x == 0 and 1 < y < sz_y:
+            self.matrix[x][y] -= 4
+            self.matrix[x][y + 1] += 1
+            self.matrix[x][y - 1] += 1
+            self.matrix[x + 1][y] += 1
+            return
+        if y == 0 and 1 < x < sz_x:
+            self.matrix[x][y] -= 4
+            self.matrix[x][y + 1] += 1
+            self.matrix[x + 1][y] += 1
+            self.matrix[x - 1][y] += 1
+            return
+        # normal
+        self.matrix[x][y] -= 4
+        self.matrix[x + 1][y] += 1
+        self.matrix[x - 1][y] += 1
+        self.matrix[x][y + 1] += 1
+        self.matrix[x][y - 1] += 1
+
+    def landslide(self, point, num):
+        sz_x, sz_y = self.area
+        x, y = point
+        tmp = num // 4
+        self.matrix[x][y] = num % 4
+        if (0 < x < sz_x - 1) and (0 < y < sz_y - 1):
+            self.matrix[x + 1][y] += tmp
+            self.matrix[x - 1][y] += tmp
+            self.matrix[x][y + 1] += tmp
+            self.matrix[x][y - 1] += tmp
+
+    def color_render(self, colors):
+        new_matrix = np.zeros((len(self.matrix), len(self.matrix[0]), 3), dtype=np.uint8)
+        for i in range(len(new_matrix)):
+            for j in range(len(new_matrix[0])):
+                new_matrix[i][j] = colors[self.matrix[i][j]]
+        return new_matrix
 
 
 def move_system_point(size, step, point):
@@ -31,20 +55,22 @@ def move_system_point(size, step, point):
     return ans
 
 
-im = Image.new('RGB', window_size, color='white')
-draw_s = ImageDraw.Draw(im)
-graph = [move_system_point(window_size, 5, (0, 0))]
-model_A = massive_of_model(window_size, graph, 10**4)
-for i in range(len(model_A)):
-    for j in range(len(model_A[0])):
-        if model_A[i][j] == 1:
-            draw_s.point([i, j], 'yellow')
-        if model_A[i][j] == 2:
-            draw_s.point((i, j), 'blue')
-        if model_A[i][j] == 3:
-            draw_s.point((i, j), 'green')
-        if model_A[i][j] == 4:
-            draw_s.point((i, j), 'orange')
+if __name__ == '__main__':
+    window_size = (120, 120)
+    size_iteration = 10 ** 14
+    sand = Sandpile(window_size)
+    centre = move_system_point(window_size, 1, (0, 0))
+    sand.landslide(centre, num=size_iteration)
+    is_not_relaxed = True
+    while is_not_relaxed:
+        is_not_relaxed = False
+        for i in range(window_size[0]):
+            for j in range(window_size[1]):
+                tmp = sand.matrix[i][j]
+                if tmp > 3:
+                    is_not_relaxed = True
+                    sand.landslide((i, j), tmp)
 
-# im.save('digital_signal.png')
-im.show()
+    colors = [(255, 255, 0), (0, 125, 52), (0, 125, 255), (139, 0, 255)]
+    img = Image.fromarray(sand.color_render(colors), "RGB")
+    img.show()
