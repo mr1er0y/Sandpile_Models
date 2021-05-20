@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-const int screen_width = 450, screen_height = 450;
+const int screen_width = 600, screen_height = 600;
 
 
 /*!
@@ -35,7 +35,7 @@ public:
         matrix = std::vector(height, std::vector<int>(width, 3));
     }
 
-    void landslide(Point point, int num = 0) {
+    void landslide(Point point, int num = 0, bool v_teleport = false, bool h_teleport = false) {
 //        if ( point.x < 2 || point.y < 2)
 //            std::cout << "POINT x:" <<point.x << " y:" << point.y << "\n";
 
@@ -57,6 +57,7 @@ public:
             matrix[point.y][point.x] = remain_part;
             matrix[point.y + 1][point.x] += whole_part;
             matrix[point.y][point.x + 1] += whole_part;
+
             return;
         }
         if (point.y == width - 1 && point.x == width - 1) {
@@ -81,6 +82,7 @@ public:
             matrix[point.y][point.x] = remain_part;
             matrix[point.y + 1][point.x] += whole_part;
             matrix[point.y][point.x - 1] += whole_part;
+
             return;
         }
         if (point.y == height - 1 && point.x == 0) {
@@ -106,6 +108,9 @@ public:
             matrix[point.y][point.x + 1] += whole_part;
             matrix[point.y][point.x - 1] += whole_part;
             matrix[point.y + 1][point.x] += whole_part;
+            if (h_teleport) {
+                matrix[height - 1][width - point.x] += whole_part;
+            }
             return;
         }
         if (point.x == 0 && 0 < point.y && point.y < height - 1) {
@@ -119,6 +124,9 @@ public:
             matrix[point.y][point.x + 1] += whole_part;
             matrix[point.y + 1][point.x] += whole_part;
             matrix[point.y - 1][point.x] += whole_part;
+            if (v_teleport) {
+                matrix[height - point.y][width - 1] += whole_part;
+            }
             return;
         }
         if (point.x == width - 1 && 0 < point.y && point.y < height - 1) {
@@ -132,6 +140,9 @@ public:
             matrix[point.y][point.x - 1] += whole_part;
             matrix[point.y + 1][point.x] += whole_part;
             matrix[point.y - 1][point.x] += whole_part;
+            if (v_teleport) {
+                matrix[height - point.y][0] += whole_part;
+            }
             return;
         }
         if (point.y == height - 1 && 0 < point.x && point.x < width - 1) {
@@ -145,6 +156,9 @@ public:
             matrix[point.y][point.x + 1] += whole_part;
             matrix[point.y][point.x - 1] += whole_part;
             matrix[point.y - 1][point.x] += whole_part;
+            if (h_teleport) {
+                matrix[0][width - point.x] += whole_part;
+            }
             return;
         }
         // normal
@@ -182,7 +196,7 @@ int main() {
             for (int x = 0; x < screen_width; ++x) {
                 if (model.matrix[y][x] > 3) {
                     Point a(x, y);
-                    model.landslide(a);
+                    model.landslide(a, 0, true, true);
                     flag = false;
                 }
                 arr_point[y * screen_width + x].position = sf::Vector2f(y, x);
